@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📦 품번별 H/W랙 검색</title>
+    <title>📦 품번별 H/W랙 검색(버스)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
@@ -39,6 +39,23 @@
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
+        }
+        
+        .header h1 a {
+            color: white;
+            text-decoration: underline;
+            text-decoration-color: white;
+        }
+        
+        .header h1 a:hover {
+            text-decoration-thickness: 2px;
+            opacity: 0.9;
+        }
+        
+        .header-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 8px;
         }
         
         .content {
@@ -222,7 +239,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📦 품번별 H/W랙 검색</h1>
+            <h1><a href="https://kenshin80.github.io/trk/" target="_blank">📦 품번별 H/W랙 검색(버스)</a></h1>
+            <div class="header-subtitle">클릭하면 트럭H/W랙 검색으로 이동</div>
         </div>
         
         <div class="content">
