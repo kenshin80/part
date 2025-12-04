@@ -241,14 +241,14 @@
 
         <div class="note">
             * Cloudflare Worker를 사용하면 토큰을 입력할 필요가 없습니다.<br>
-            * Worker URL: <code id="workerUrl">설정 필요</code><br>
+            * Worker URL: <code id="workerUrl">github-uploader.bwind98.workers.dev</code><br>
             * 동일한 파일명이 있으면 자동으로 백업(.bak)하고 새 파일로 덮어씁니다.
         </div>
     </div>
 
     <script>
-        // Cloudflare Worker URL (배포 후 설정)
-        const WORKER_URL = 'https://your-worker.your-subdomain.workers.dev';
+        // Cloudflare Worker URL
+        const WORKER_URL = 'https://github-uploader.bwind98.workers.dev';
         
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
@@ -262,7 +262,7 @@
         const tokenInput = document.getElementById('token');
 
         // Worker URL 표시
-        document.getElementById('workerUrl').textContent = WORKER_URL;
+        document.getElementById('workerUrl').textContent = WORKER_URL.replace('https://', '');
 
         useDirectApiCheckbox.addEventListener('change', (e) => {
             tokenGroup.style.display = e.target.checked ? 'block' : 'none';
