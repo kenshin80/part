@@ -41,7 +41,6 @@
             font-weight: 500;
         }
         input[type="text"],
-        input[type="password"],
         input[type="file"] {
             width: 100%;
             padding: 12px;
@@ -50,8 +49,7 @@
             font-size: 14px;
             transition: border-color 0.3s;
         }
-        input[type="text"]:focus,
-        input[type="password"]:focus {
+        input[type="text"]:focus {
             outline: none;
             border-color: #4285f4;
         }
@@ -141,14 +139,34 @@
             font-size: 13px;
             color: #1565c0;
         }
-        .info-box a {
-            color: #1565c0;
-            text-decoration: underline;
-        }
         .progress {
             margin-top: 10px;
             font-size: 13px;
             color: #666;
+        }
+        .toggle-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #333;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        #tokenGroup {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
@@ -163,17 +181,24 @@
         </h1>
 
         <div class="info-box">
-            📌 GitHub Personal Access Token이 필요합니다.<br>
-            <a href="https://github.com/settings/tokens" target="_blank">여기</a>에서 생성할 수 있습니다. (repo 권한 필요)<br>
-            <small>💾 기존 파일이 있으면 .bak 확장자로 백업됩니다</small>
+            🔒 Cloudflare Worker를 통해 안전하게 업로드됩니다.<br>
+            💾 기존 파일이 있으면 .bak 확장자로 자동 백업됩니다.
+        </div>
+
+        <div class="toggle-container">
+            <label class="toggle-label">
+                <input type="checkbox" id="useDirectApi">
+                <span>직접 GitHub API 사용 (토큰 필요)</span>
+            </label>
+            <div id="tokenGroup" style="display: none;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>GitHub Token * <small>(저장되지 않음)</small></label>
+                    <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx">
+                </div>
+            </div>
         </div>
 
         <form id="uploadForm">
-            <div class="form-group">
-                <label>GitHub Token * <small>(저장되지 않음)</small></label>
-                <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx" required>
-            </div>
-
             <div class="form-group">
                 <label>엑셀 파일 선택 *</label>
                 <div class="file-input-wrapper">
@@ -215,13 +240,16 @@
         <div id="resultMessage" class="message"></div>
 
         <div class="note">
-            * 이 페이지는 GitHub REST API를 사용하여 직접 파일을 업로드합니다.<br>
-            * 토큰은 브라우저에만 저장되며 서버로 전송되지 않습니다.<br>
+            * Cloudflare Worker를 사용하면 토큰을 입력할 필요가 없습니다.<br>
+            * Worker URL: <code id="workerUrl">설정 필요</code><br>
             * 동일한 파일명이 있으면 자동으로 백업(.bak)하고 새 파일로 덮어씁니다.
         </div>
     </div>
 
     <script>
+        // Cloudflare Worker URL (배포 후 설정)
+        const WORKER_URL = 'https://your-worker.your-subdomain.workers.dev';
+        
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
         const uploadForm = document.getElementById('uploadForm');
@@ -229,6 +257,16 @@
         const resultMessage = document.getElementById('resultMessage');
         const pathInput = document.getElementById('path');
         const progressDiv = document.getElementById('progress');
+        const useDirectApiCheckbox = document.getElementById('useDirectApi');
+        const tokenGroup = document.getElementById('tokenGroup');
+        const tokenInput = document.getElementById('token');
+
+        // Worker URL 표시
+        document.getElementById('workerUrl').textContent = WORKER_URL;
+
+        useDirectApiCheckbox.addEventListener('change', (e) => {
+            tokenGroup.style.display = e.target.checked ? 'block' : 'none';
+        });
 
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
@@ -244,14 +282,6 @@
             progressDiv.textContent = text;
         }
 
-        function changeFileExtension(filepath, newExt) {
-            const lastDotIndex = filepath.lastIndexOf('.');
-            if (lastDotIndex === -1) {
-                return filepath + '.' + newExt;
-            }
-            return filepath.substring(0, lastDotIndex) + '.' + newExt;
-        }
-
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -261,130 +291,34 @@
                 return;
             }
 
-            const token = document.getElementById('token').value;
+            const useDirectApi = useDirectApiCheckbox.checked;
+            
+            if (useDirectApi && !tokenInput.value) {
+                showMessage('GitHub Token을 입력해주세요.', 'error');
+                return;
+            }
+
             const owner = document.getElementById('owner').value;
             const repo = document.getElementById('repo').value;
             const branch = document.getElementById('branch').value;
             const path = document.getElementById('path').value;
             const message = document.getElementById('message').value || `Upload ${file.name}`;
 
-            if (!token) {
-                showMessage('GitHub Token을 입력해주세요.', 'error');
-                return;
-            }
-
             uploadBtn.disabled = true;
             uploadBtn.textContent = '업로드 중...';
             setProgress('');
 
             try {
-                // 1. 기존 파일이 있는지 확인
-                setProgress('⏳ 기존 파일 확인 중...');
-                let existingFile = null;
-                try {
-                    const checkResponse = await fetch(
-                        `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
-                        {
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'Accept': 'application/vnd.github.v3+json'
-                            }
-                        }
-                    );
-                    if (checkResponse.ok) {
-                        existingFile = await checkResponse.json();
-                    }
-                } catch (e) {
-                    // 파일이 없으면 무시
-                }
-
-                // 2. 기존 파일이 있으면 .bak으로 백업
-                if (existingFile) {
-                    setProgress('💾 기존 파일을 백업 중...');
-                    const bakPath = changeFileExtension(path, 'bak');
-                    
-                    try {
-                        // 기존 .bak 파일이 있는지 확인
-                        let oldBakSha = null;
-                        const checkBakResponse = await fetch(
-                            `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}?ref=${branch}`,
-                            {
-                                headers: {
-                                    'Authorization': `token ${token}`,
-                                    'Accept': 'application/vnd.github.v3+json'
-                                }
-                            }
-                        );
-                        if (checkBakResponse.ok) {
-                            const oldBak = await checkBakResponse.json();
-                            oldBakSha = oldBak.sha;
-                        }
-
-                        // 현재 파일을 .bak으로 복사
-                        const backupResponse = await fetch(
-                            `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}`,
-                            {
-                                method: 'PUT',
-                                headers: {
-                                    'Authorization': `token ${token}`,
-                                    'Accept': 'application/vnd.github.v3+json',
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    message: `Backup of ${path}`,
-                                    content: existingFile.content,
-                                    branch: branch,
-                                    ...(oldBakSha && { sha: oldBakSha })
-                                })
-                            }
-                        );
-
-                        if (backupResponse.ok) {
-                            showMessage(`기존 파일이 ${bakPath}로 백업되었습니다.`, 'info');
-                        }
-                    } catch (backupError) {
-                        console.warn('백업 실패:', backupError);
-                        showMessage('백업 중 오류가 발생했지만 업로드를 진행합니다.', 'info');
-                    }
-                }
-
-                // 3. 파일을 base64로 변환
                 setProgress('📦 파일 변환 중...');
                 const base64 = await fileToBase64(file);
 
-                // 4. 새 파일 업로드 (덮어쓰기)
-                setProgress('⬆️ 파일 업로드 중...');
-                const uploadResponse = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            message: message,
-                            content: base64,
-                            branch: branch,
-                            ...(existingFile && { sha: existingFile.sha })
-                        })
-                    }
-                );
-
-                if (!uploadResponse.ok) {
-                    const error = await uploadResponse.json();
-                    throw new Error(error.message || '업로드 실패');
+                if (useDirectApi) {
+                    // 직접 GitHub API 사용 (기존 로직)
+                    await uploadWithDirectApi(owner, repo, branch, path, message, base64, tokenInput.value);
+                } else {
+                    // Cloudflare Worker 사용
+                    await uploadWithWorker(owner, repo, branch, path, message, base64);
                 }
-
-                const result = await uploadResponse.json();
-                setProgress('');
-                showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
-                    (existingFile ? ' (기존 파일 백업됨)' : ''), 'success');
-                
-                setTimeout(() => {
-                    window.open(result.content.html_url, '_blank');
-                }, 1000);
 
             } catch (error) {
                 setProgress('');
@@ -394,6 +328,134 @@
                 uploadBtn.textContent = 'GitHub에 업로드';
             }
         });
+
+        async function uploadWithWorker(owner, repo, branch, path, message, base64) {
+            setProgress('⬆️ Cloudflare Worker를 통해 업로드 중...');
+            
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    owner,
+                    repo,
+                    path,
+                    branch,
+                    message,
+                    content: base64
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || '업로드 실패');
+            }
+
+            setProgress('');
+            showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
+                (result.backed_up ? ' (기존 파일 백업됨)' : ''), 'success');
+            
+            setTimeout(() => {
+                window.open(result.data.content.html_url, '_blank');
+            }, 1000);
+        }
+
+        async function uploadWithDirectApi(owner, repo, branch, path, message, base64, token) {
+            // 기존 직접 API 호출 로직
+            setProgress('⏳ 기존 파일 확인 중...');
+            let existingFile = null;
+            try {
+                const checkResponse = await fetch(
+                    `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
+                    {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                if (checkResponse.ok) {
+                    existingFile = await checkResponse.json();
+                }
+            } catch (e) {}
+
+            if (existingFile) {
+                setProgress('💾 기존 파일을 백업 중...');
+                const bakPath = path.replace(/\.[^.]+$/, '.bak');
+                
+                try {
+                    let oldBakSha = null;
+                    const checkBakResponse = await fetch(
+                        `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}?ref=${branch}`,
+                        {
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        }
+                    );
+                    if (checkBakResponse.ok) {
+                        const oldBak = await checkBakResponse.json();
+                        oldBakSha = oldBak.sha;
+                    }
+
+                    await fetch(
+                        `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: `Backup of ${path}`,
+                                content: existingFile.content,
+                                branch: branch,
+                                ...(oldBakSha && { sha: oldBakSha })
+                            })
+                        }
+                    );
+                } catch (backupError) {
+                    console.warn('백업 실패:', backupError);
+                }
+            }
+
+            setProgress('⬆️ 파일 업로드 중...');
+            const uploadResponse = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        content: base64,
+                        branch: branch,
+                        ...(existingFile && { sha: existingFile.sha })
+                    })
+                }
+            );
+
+            if (!uploadResponse.ok) {
+                const error = await uploadResponse.json();
+                throw new Error(error.message || '업로드 실패');
+            }
+
+            const result = await uploadResponse.json();
+            setProgress('');
+            showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
+                (existingFile ? ' (기존 파일 백업됨)' : ''), 'success');
+            
+            setTimeout(() => {
+                window.open(result.content.html_url, '_blank');
+            }, 1000);
+        }
 
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
