@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excel to GitHub Uploader</title>
+    <title>엑셀파일 업로드</title>
     <style>
         * {
             margin: 0;
@@ -12,24 +12,26 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        h1 {
-            color: #1a1a2e;
-            margin-bottom: 30px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+        }
+        .container {
+            max-width: 550px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
         }
         .form-group {
             margin-bottom: 20px;
@@ -37,34 +39,53 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 14px;
         }
-        input[type="text"],
-        input[type="file"] {
+        label.file-label {
+            color: #667eea;
+        }
+        label.owner-label {
+            color: #38b2ac;
+        }
+        label.repo-label {
+            color: #4299e1;
+        }
+        label.branch-label {
+            color: #ed8936;
+        }
+        label.path-label {
+            color: #e53e3e;
+        }
+        label.message-label {
+            color: #9f7aea;
+        }
+        input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
+            padding: 12px 14px;
+            border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
         }
         input[type="text"]:focus {
             outline: none;
-            border-color: #4285f4;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         .file-input-wrapper {
             position: relative;
-            border: 2px dashed #e0e0e0;
+            border: 2px dashed #cbd5e0;
             border-radius: 8px;
-            padding: 20px;
+            padding: 30px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            background: #f7fafc;
         }
         .file-input-wrapper:hover {
-            border-color: #4285f4;
-            background: #f8f9fa;
+            border-color: #667eea;
+            background: #edf2f7;
         }
         .file-input-wrapper input {
             position: absolute;
@@ -75,47 +96,49 @@
             left: 0;
             cursor: pointer;
         }
+        .file-name {
+            color: #4a5568;
+            font-size: 14px;
+        }
         button {
             width: 100%;
-            padding: 15px;
-            background: #4285f4;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            margin-top: 10px;
         }
         button:hover {
-            background: #357ae8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
         button:disabled {
-            background: #ccc;
+            background: #cbd5e0;
             cursor: not-allowed;
+            transform: none;
         }
         .message {
             margin-top: 20px;
-            padding: 15px;
+            padding: 14px;
             border-radius: 8px;
             display: none;
+            font-size: 14px;
         }
         .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
             display: block;
         }
         .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
             display: block;
         }
         .grid {
@@ -124,130 +147,73 @@
             gap: 15px;
         }
         .note {
-            margin-top: 20px;
+            margin-top: 25px;
             padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid #e2e8f0;
             font-size: 12px;
-            color: #666;
-        }
-        .info-box {
-            background: #e3f2fd;
-            border: 1px solid #90caf9;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            color: #1565c0;
+            color: #718096;
+            text-align: center;
         }
         .progress {
             margin-top: 10px;
             font-size: 13px;
-            color: #666;
-        }
-        .toggle-container {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
+            color: #667eea;
+            text-align: center;
             font-weight: 500;
-            color: #333;
-        }
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-        #tokenGroup {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
-                <path d="M9 18c-4.51 2-5-2-7-2"></path>
-            </svg>
-            Excel to GitHub
-        </h1>
-
-        <div class="info-box">
-            🔒 Cloudflare Worker를 통해 안전하게 업로드됩니다.<br>
-            💾 기존 파일이 있으면 .bak 확장자로 자동 백업됩니다.
-        </div>
-
-        <div class="toggle-container">
-            <label class="toggle-label">
-                <input type="checkbox" id="useDirectApi">
-                <span>직접 GitHub API 사용 (토큰 필요)</span>
-            </label>
-            <div id="tokenGroup" style="display: none;">
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label>GitHub Token * <small>(저장되지 않음)</small></label>
-                    <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxx">
-                </div>
-            </div>
-        </div>
+        <h1>📊 엑셀파일 업로드</h1>
 
         <form id="uploadForm">
             <div class="form-group">
-                <label>엑셀 파일 선택 *</label>
+                <label class="file-label">엑셀 파일 *</label>
                 <div class="file-input-wrapper">
                     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" required>
-                    <span id="fileName">파일을 선택하거나 드래그하세요</span>
+                    <span class="file-name" id="fileName">📁 파일을 선택하거나 드래그하세요</span>
                 </div>
             </div>
 
             <div class="grid">
                 <div class="form-group">
-                    <label>Owner *</label>
+                    <label class="owner-label">Owner *</label>
                     <input type="text" id="owner" value="kenshin80" required>
                 </div>
                 <div class="form-group">
-                    <label>Repository *</label>
+                    <label class="repo-label">Repository *</label>
                     <input type="text" id="repo" value="part" required>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Branch</label>
+                <label class="branch-label">Branch</label>
                 <input type="text" id="branch" value="main">
             </div>
 
             <div class="form-group">
-                <label>File Path *</label>
+                <label class="path-label">File Path *</label>
                 <input type="text" id="path" placeholder="data/example.xlsx" required>
             </div>
 
             <div class="form-group">
-                <label>Commit Message</label>
+                <label class="message-label">Commit Message</label>
                 <input type="text" id="message" placeholder="Upload excel file">
             </div>
 
-            <button type="submit" id="uploadBtn">GitHub에 업로드</button>
+            <button type="submit" id="uploadBtn">📤 파일 업로드</button>
             <div id="progress" class="progress"></div>
         </form>
 
         <div id="resultMessage" class="message"></div>
 
         <div class="note">
-            * Cloudflare Worker를 사용하면 토큰을 입력할 필요가 없습니다.<br>
-            * Worker URL: <code id="workerUrl">github-uploader.bwind98.workers.dev</code><br>
-            * 동일한 파일명이 있으면 자동으로 백업(.bak)하고 새 파일로 덮어씁니다.
+            💾 동일한 파일명이 있으면 자동으로 백업(.bak)하고 새 파일로 덮어씁니다.
         </div>
     </div>
 
     <script>
-        // Cloudflare Worker URL
         const WORKER_URL = 'https://github-uploader.bwind98.workers.dev';
         
         const fileInput = document.getElementById('fileInput');
@@ -257,21 +223,11 @@
         const resultMessage = document.getElementById('resultMessage');
         const pathInput = document.getElementById('path');
         const progressDiv = document.getElementById('progress');
-        const useDirectApiCheckbox = document.getElementById('useDirectApi');
-        const tokenGroup = document.getElementById('tokenGroup');
-        const tokenInput = document.getElementById('token');
-
-        // Worker URL 표시
-        document.getElementById('workerUrl').textContent = WORKER_URL.replace('https://', '');
-
-        useDirectApiCheckbox.addEventListener('change', (e) => {
-            tokenGroup.style.display = e.target.checked ? 'block' : 'none';
-        });
 
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 const file = e.target.files[0];
-                fileName.textContent = file.name;
+                fileName.textContent = '✅ ' + file.name;
                 if (!pathInput.value) {
                     pathInput.value = file.name;
                 }
@@ -291,13 +247,6 @@
                 return;
             }
 
-            const useDirectApi = useDirectApiCheckbox.checked;
-            
-            if (useDirectApi && !tokenInput.value) {
-                showMessage('GitHub Token을 입력해주세요.', 'error');
-                return;
-            }
-
             const owner = document.getElementById('owner').value;
             const repo = document.getElementById('repo').value;
             const branch = document.getElementById('branch').value;
@@ -305,157 +254,51 @@
             const message = document.getElementById('message').value || `Upload ${file.name}`;
 
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '업로드 중...';
+            uploadBtn.textContent = '⏳ 업로드 중...';
             setProgress('');
 
             try {
                 setProgress('📦 파일 변환 중...');
                 const base64 = await fileToBase64(file);
 
-                if (useDirectApi) {
-                    // 직접 GitHub API 사용 (기존 로직)
-                    await uploadWithDirectApi(owner, repo, branch, path, message, base64, tokenInput.value);
-                } else {
-                    // Cloudflare Worker 사용
-                    await uploadWithWorker(owner, repo, branch, path, message, base64);
+                setProgress('⬆️ 업로드 중...');
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        owner,
+                        repo,
+                        path,
+                        branch,
+                        message,
+                        content: base64
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || '업로드 실패');
                 }
+
+                setProgress('');
+                showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
+                    (result.backed_up ? ' (기존 파일 백업됨)' : ''), 'success');
+                
+                setTimeout(() => {
+                    window.open(result.data.content.html_url, '_blank');
+                }, 1000);
 
             } catch (error) {
                 setProgress('');
                 showMessage('업로드 중 오류가 발생했습니다: ' + error.message, 'error');
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = 'GitHub에 업로드';
+                uploadBtn.textContent = '📤 파일 업로드';
             }
         });
-
-        async function uploadWithWorker(owner, repo, branch, path, message, base64) {
-            setProgress('⬆️ Cloudflare Worker를 통해 업로드 중...');
-            
-            const response = await fetch(WORKER_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    owner,
-                    repo,
-                    path,
-                    branch,
-                    message,
-                    content: base64
-                })
-            });
-
-            const result = await response.json();
-
-            if (!result.success) {
-                throw new Error(result.error || '업로드 실패');
-            }
-
-            setProgress('');
-            showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
-                (result.backed_up ? ' (기존 파일 백업됨)' : ''), 'success');
-            
-            setTimeout(() => {
-                window.open(result.data.content.html_url, '_blank');
-            }, 1000);
-        }
-
-        async function uploadWithDirectApi(owner, repo, branch, path, message, base64, token) {
-            // 기존 직접 API 호출 로직
-            setProgress('⏳ 기존 파일 확인 중...');
-            let existingFile = null;
-            try {
-                const checkResponse = await fetch(
-                    `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
-                    {
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'Accept': 'application/vnd.github.v3+json'
-                        }
-                    }
-                );
-                if (checkResponse.ok) {
-                    existingFile = await checkResponse.json();
-                }
-            } catch (e) {}
-
-            if (existingFile) {
-                setProgress('💾 기존 파일을 백업 중...');
-                const bakPath = path.replace(/\.[^.]+$/, '.bak');
-                
-                try {
-                    let oldBakSha = null;
-                    const checkBakResponse = await fetch(
-                        `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}?ref=${branch}`,
-                        {
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'Accept': 'application/vnd.github.v3+json'
-                            }
-                        }
-                    );
-                    if (checkBakResponse.ok) {
-                        const oldBak = await checkBakResponse.json();
-                        oldBakSha = oldBak.sha;
-                    }
-
-                    await fetch(
-                        `https://api.github.com/repos/${owner}/${repo}/contents/${bakPath}`,
-                        {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'Accept': 'application/vnd.github.v3+json',
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                message: `Backup of ${path}`,
-                                content: existingFile.content,
-                                branch: branch,
-                                ...(oldBakSha && { sha: oldBakSha })
-                            })
-                        }
-                    );
-                } catch (backupError) {
-                    console.warn('백업 실패:', backupError);
-                }
-            }
-
-            setProgress('⬆️ 파일 업로드 중...');
-            const uploadResponse = await fetch(
-                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        content: base64,
-                        branch: branch,
-                        ...(existingFile && { sha: existingFile.sha })
-                    })
-                }
-            );
-
-            if (!uploadResponse.ok) {
-                const error = await uploadResponse.json();
-                throw new Error(error.message || '업로드 실패');
-            }
-
-            const result = await uploadResponse.json();
-            setProgress('');
-            showMessage('파일이 성공적으로 업로드되었습니다! ✅' + 
-                (existingFile ? ' (기존 파일 백업됨)' : ''), 'success');
-            
-            setTimeout(() => {
-                window.open(result.content.html_url, '_blank');
-            }, 1000);
-        }
 
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
