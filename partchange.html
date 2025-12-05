@@ -111,7 +111,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 10px;
         }
         button:hover {
             transform: translateY(-2px);
@@ -123,7 +122,8 @@
             transform: none;
         }
         .message {
-            margin-top: 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
             padding: 14px;
             border-radius: 8px;
             display: none;
@@ -156,10 +156,27 @@
         }
         .progress {
             margin-top: 10px;
+            margin-bottom: 15px;
             font-size: 13px;
             color: #667eea;
             text-align: center;
             font-weight: 500;
+        }
+        .divider {
+            margin: 30px 0;
+            border-top: 2px solid #e2e8f0;
+            position: relative;
+        }
+        .divider-text {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 15px;
+            color: #a0aec0;
+            font-size: 12px;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -168,6 +185,7 @@
         <h1>📊 엑셀파일 업로드</h1>
 
         <form id="uploadForm">
+            <!-- 파일 선택 -->
             <div class="form-group">
                 <label class="file-label">엑셀 파일 *</label>
                 <div class="file-input-wrapper">
@@ -176,6 +194,21 @@
                 </div>
             </div>
 
+            <!-- 업로드 버튼 -->
+            <button type="submit" id="uploadBtn">📤 파일 업로드</button>
+            
+            <!-- 진행 상황 -->
+            <div id="progress" class="progress"></div>
+
+            <!-- 결과 메시지 -->
+            <div id="resultMessage" class="message"></div>
+
+            <!-- 구분선 -->
+            <div class="divider">
+                <span class="divider-text">상세 설정</span>
+            </div>
+
+            <!-- Owner & Repository -->
             <div class="grid">
                 <div class="form-group">
                     <label class="owner-label">Owner *</label>
@@ -187,26 +220,24 @@
                 </div>
             </div>
 
+            <!-- Branch -->
             <div class="form-group">
                 <label class="branch-label">Branch</label>
                 <input type="text" id="branch" value="main">
             </div>
 
+            <!-- File Path -->
             <div class="form-group">
                 <label class="path-label">File Path *</label>
                 <input type="text" id="path" placeholder="data/example.xlsx" required>
             </div>
 
+            <!-- Commit Message -->
             <div class="form-group">
                 <label class="message-label">Commit Message</label>
                 <input type="text" id="message" placeholder="Upload excel file">
             </div>
-
-            <button type="submit" id="uploadBtn">📤 파일 업로드</button>
-            <div id="progress" class="progress"></div>
         </form>
-
-        <div id="resultMessage" class="message"></div>
 
         <div class="note">
             💾 동일한 파일명이 있으면 자동으로 백업(.bak)하고 새 파일로 덮어씁니다.
@@ -238,6 +269,10 @@
             progressDiv.textContent = text;
         }
 
+        function hideMessage() {
+            resultMessage.style.display = 'none';
+        }
+
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -256,6 +291,7 @@
             uploadBtn.disabled = true;
             uploadBtn.textContent = '⏳ 업로드 중...';
             setProgress('');
+            hideMessage();
 
             try {
                 setProgress('📦 파일 변환 중...');
